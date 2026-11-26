@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pdf_craft import DeepSeekOfficialOCRConfig
+from pdf_craft import DeepSeekOfficialOCRConfig, OCRBillingError
 from pdf_craft.ocr_config import VisionChatOCRConfig
 from pdf_craft.pdf.vendor_ocr import _deepseek_payload
 from pdf_craft.pdf.vision_layout import grounded_page
@@ -38,3 +38,24 @@ def test_page_layout():
     )
     with pytest.raises(ValueError):
         grounded_page('[{"kind":"text","box":[90,12,6,30],"text":"Invalid"}]')
+
+
+def test_billing_failure_is_a_single_cli_error(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    with patch("pconv_cli.setup_poppler"):
+        assert main(["init"]) == 0
+    capsys.readouterr()
+    source = tmp_path / "book.pdf"
+    source.touch()
+    output = tmp_path / "book.epub"
+    with patch("pdf_craft.PDFCraft") as craft:
+        craft.return_value.convert_pdf_to_epub.side_effect = OCRBillingError(1)
+        assert main([str(source), str(output)]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.splitlines() == [
+        "pconv: deepseek requires payment to process page 1. "
+        "Check your API balance or switch providers with 'pconv init --provider PROVIDER --model MODEL_ID'."
+    ]
+    assert not output.exists()
