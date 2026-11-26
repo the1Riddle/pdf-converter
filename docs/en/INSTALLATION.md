@@ -4,6 +4,15 @@ This guide is for users of the Python library. Start with the standard package u
 
 ## pconv command line (this fork)
 
+For a user-wide command in Codespaces or on Linux with uv installed, run:
+
+```bash
+uv tool install --force --python 3.12 'git+https://github.com/the1Riddle/pdf-converter.git@feature/pconv-cli'
+uv tool update-shell
+```
+
+Open a fresh terminal after updating PATH. The tool has its own environment; run these commands as your normal user. To install directly from a local checkout instead, use the virtual environment instructions below.
+
 Install this fork with Python 3.11–3.13. In a virtual environment, run:
 
 ```bash
@@ -16,6 +25,8 @@ pconv ~/Downloads/book.pdf ~/Books/my-edition.epub
 With no destination, pconv creates `~/Documents/book.epub`. You can also pass an existing directory. Missing output parent directories are created.
 
 Setup checks Poppler and installs missing system dependencies using apt-get on Debian/Ubuntu or Homebrew on macOS. Other platforms need Poppler installed first (see below). The default backend sends page images to the official DeepSeek OCR service. Set `DEEPSEEK_API_KEY` or enter a key during setup. Prompted keys are saved in the user's pconv configuration. Environment keys are read at conversion time.
+
+To use a vision-capable chat model for page OCR, run `pconv init --provider PROVIDER --model MODEL_ID` with the exact model ID enabled for your account. Providers are `openai` (OPENAI_API_KEY), `google` (GEMINI_API_KEY), and `anthropic` (ANTHROPIC_API_KEY). You may enter the key interactively. Setup selects a single provider for subsequent conversions. These models are asked to transcribe regions with bounding boxes; check reading order and figure placement on a sample page first.
 
 For offline conversion on a supported NVIDIA GPU, install this fork with `python -m pip install '.[local]'` and CUDA-enabled PyTorch, then run `pconv init --local` to download the model once. Subsequent conversions use the cached model.
 

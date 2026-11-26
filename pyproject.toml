@@ -45,7 +45,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pconv = "pdf_craft.pconv:main"
+pconv = "pconv_cli:main"
 
 [project.urls]
 Homepage = "https://pdfcraft.ai/"
@@ -62,7 +62,7 @@ Issues = "https://github.com/oomol-lab/pdf-craft/issues"
 local = ["doc-page-extractor[local]>=1.2.4,<2.0.0"]
 
 [tool.poetry]
-packages = [{include = "pdf_craft"}]
+packages = [{include = "pdf_craft"}, {include = "pconv_cli"}]
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.3.7"
