@@ -2,6 +2,23 @@
 
 This guide is for users of the Python library. Start with the standard package unless you deliberately want OCR models to run on your own NVIDIA GPU.
 
+## pconv command line (this fork)
+
+Install this fork with Python 3.11–3.13. In a virtual environment, run:
+
+```bash
+python -m pip install .
+pconv init
+pconv ~/Downloads/book.pdf
+pconv ~/Downloads/book.pdf ~/Books/my-edition.epub
+```
+
+With no destination, pconv creates `~/Documents/book.epub`. You can also pass an existing directory. Missing output parent directories are created.
+
+Setup checks Poppler and installs missing system dependencies using apt-get on Debian/Ubuntu or Homebrew on macOS. Other platforms need Poppler installed first (see below). The default backend sends page images to the official DeepSeek OCR service. Set `DEEPSEEK_API_KEY` or enter a key during setup. Prompted keys are saved in the user's pconv configuration. Environment keys are read at conversion time.
+
+For offline conversion on a supported NVIDIA GPU, install this fork with `python -m pip install '.[local]'` and CUDA-enabled PyTorch, then run `pconv init --local` to download the model once. Subsequent conversions use the cached model.
+
 ## Choose an installation
 
 For vendor OCR, install:
