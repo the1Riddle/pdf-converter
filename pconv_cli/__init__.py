@@ -104,7 +104,7 @@ def convert(source, output):
         raise ValueError("Run pconv init first.")
     config = json.loads(path.read_text(encoding="utf-8"))
     from pdf_craft import ConcurrentExecutor, DeepSeekOfficialOCRConfig, DeepSeekOCRLocalConfig
-    from pdf_craft import FixedCapacity, PDFCraft, PDFOptions
+    from pdf_craft import FixedCapacity, OCRBillingError, PDFCraft, PDFOptions
     from pdf_craft.ocr_config import VisionChatOCRConfig
 
     provider = config.get("backend")
@@ -126,7 +126,13 @@ def convert(source, output):
     else:
         raise ValueError("Unknown OCR backend. Rerun pconv init.")
     output.parent.mkdir(parents=True, exist_ok=True)
-    PDFCraft(pdf=PDFOptions(ocr=ocr, ocr_executor=executor)).convert_pdf_to_epub(source, output)
+    try:
+        PDFCraft(pdf=PDFOptions(ocr=ocr, ocr_executor=executor)).convert_pdf_to_epub(source, output)
+    except OCRBillingError as error:
+        raise ValueError(
+            f"{provider} requires payment to process page {error.page_index}. "
+            "Check your API balance or switch providers with 'pconv init --provider PROVIDER --model MODEL_ID'."
+        ) from None
     print(output.resolve())
 
 
