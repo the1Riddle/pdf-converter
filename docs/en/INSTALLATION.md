@@ -1,8 +1,10 @@
 # Installation Guide
 
-This guide is for users of the Python library. Start with the standard package unless you deliberately want OCR models to run on your own NVIDIA GPU.
+For the `pconv` CLI, choose [remote OCR](#remote-ocr) or [local NVIDIA GPU OCR](#run-pconv-locally-on-an-nvidia-gpu). For the Python library, start with [Choose an installation](#choose-an-installation).
 
 ## pconv command line (this fork)
+
+### Remote OCR
 
 For a user-wide command in Codespaces or on Linux with uv installed, run:
 
@@ -28,7 +30,34 @@ Setup checks Poppler and installs missing system dependencies using apt-get on D
 
 To use a vision-capable chat model for page OCR, run `pconv init --provider PROVIDER --model MODEL_ID` with the exact model ID enabled for your account. Providers are `openai` (OPENAI_API_KEY), `google` (GEMINI_API_KEY), and `anthropic` (ANTHROPIC_API_KEY). You may enter the key interactively. Setup selects a single provider for subsequent conversions. These models are asked to transcribe regions with bounding boxes; check reading order and figure placement on a sample page first.
 
-For offline conversion on a supported NVIDIA GPU, install this fork with `python -m pip install '.[local]'` and CUDA-enabled PyTorch, then run `pconv init --local` to download the model once. Subsequent conversions use the cached model.
+### Run pconv locally on an NVIDIA GPU
+
+On Linux, run `nvidia-smi` in the terminal where you will run `pconv`. It should list your GPU and driver. In a container or Codespace, the GPU must be visible inside that environment. You will also need sufficient GPU memory for the OCR model and disk space for its weights.
+
+Install the CLI for your user with a current version of uv. The `[local]` extra installs the local OCR runtime, and `--torch-backend auto` lets uv select a PyTorch build for the detected driver. Use the same command to switch an existing remote-only installation to local OCR.
+
+```bash
+uv tool install --force --python 3.12 --torch-backend auto \
+  'pdf-craft[local] @ git+https://github.com/the1Riddle/pdf-converter.git@feature/pconv-cli'
+uv tool update-shell
+```
+
+Open a fresh terminal. Check CUDA using the Python interpreter that runs the CLI:
+
+```bash
+"$(uv tool dir)/pdf-craft/bin/python" -c 'import torch; print("PyTorch", torch.__version__, "CUDA", torch.version.cuda, "GPU available", torch.cuda.is_available())'
+```
+
+Continue when the output includes `GPU available True`. If it prints `False`, check GPU visibility with `nvidia-smi` and repeat the install with a CUDA backend compatible with your driver and PyTorch version. See the [uv PyTorch guide](https://docs.astral.sh/uv/guides/integration/pytorch/) and [PyTorch installation selector](https://pytorch.org/get-started/locally/).
+
+Initialize once while online to check Poppler and download the DeepSeek OCR model. Local mode requires no API key. After setup, conversions use the cached model and can run offline:
+
+```bash
+pconv init --local
+pconv ~/Downloads/book.pdf
+```
+
+The resulting ebook is `~/Documents/book.epub`. To choose the destination, pass it as the second argument, for example `pconv ~/Downloads/book.pdf ~/Books/my-edition.epub`.
 
 ## Choose an installation
 
