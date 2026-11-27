@@ -98,6 +98,12 @@ class DeepSeekOCRVendorConfig:
 
 
 @dataclass(frozen=True)
+class VisionChatOCRConfig(DeepSeekOCRVendorConfig):
+    """Use multimodal chat to generate regions for the grounded OCR decoder."""
+    provider: str = "openai"
+
+
+@dataclass(frozen=True)
 class DeepSeekOfficialOCRConfig:
     api_key: str = field(repr=False)
     timeout_seconds: int = 180

@@ -37,10 +37,12 @@ from ..ocr_config import (
     DeepSeekOCR2VendorConfig,
     DeepSeekOCRVendorConfig,
     DeepSeekOfficialOCRConfig,
+    VisionChatOCRConfig,
     MiniCPMOCRVendorConfig,
     UnlimitedOCRVendorConfig,
     VendorOCRConfig,
 )
+from .vision_layout import PAGE_PROMPT, grounded_page
 from ..runtime import IO_DOMAIN
 
 
@@ -410,6 +412,7 @@ class VendorOCRRuntime:
         assert isinstance(config, (
             DeepSeekOCRVendorConfig, DeepSeekOCR2VendorConfig,
         ))
+        label = config.provider if isinstance(config, VisionChatOCRConfig) else "DeepSeek OCR"
         payload = await IO_DOMAIN.run(
             _deepseek_payload, request.image_url, config,
         )
@@ -433,7 +436,7 @@ class VendorOCRRuntime:
                     observe_tokens(response.json().get('usage'))
                 except (ValueError, AttributeError):
                     pass
-                data = _checked_response(response, request.page_index, "DeepSeek OCR")
+                data = _checked_response(response, request.page_index, label)
                 if attempt_usage is not None:
                     attempt_usage.accept()
                 return {"data": data, "response": response}
@@ -446,29 +449,37 @@ class VendorOCRRuntime:
         usage_value = data.get("usage")
         if usage_value is not None and not isinstance(usage_value, dict):
             _raise_malformed_response(
-                response, "DeepSeek OCR response has invalid usage",
+                response, f"{label} response has invalid usage",
             )
         usage = usage_value or {}
         choices_value = data.get("choices")
         if not isinstance(choices_value, list) or not choices_value:
             _raise_malformed_response(
-                response, "DeepSeek OCR response has invalid choices",
+                response, f"{label} response has invalid choices",
             )
         choice = choices_value[0]
         if not isinstance(choice, dict):
             _raise_malformed_response(
-                response, "DeepSeek OCR response has invalid choice",
+                response, f"{label} response has invalid choice",
             )
         message = choice.get("message")
         if not isinstance(message, dict):
             _raise_malformed_response(
-                response, "DeepSeek OCR response has invalid message",
+                response, f"{label} response has invalid message",
             )
         content = message.get("content")
         if not isinstance(content, str):
             _raise_malformed_response(
-                response, "DeepSeek OCR response has invalid content",
+                response, f"{label} response has invalid content",
             )
+        if isinstance(config, VisionChatOCRConfig):
+            if choice.get("finish_reason") != "stop":
+                _raise_malformed_response(response, f"{label} returned incomplete page output")
+            try:
+                content = grounded_page(content)
+            except ValueError as error:
+                _raise_malformed_response(response, f"{label} returned invalid page layout", cause=error)
+            message["content"] = content
         token_counts = (
             usage.get("prompt_tokens", 0),
             usage.get("completion_tokens", 0),
@@ -478,7 +489,7 @@ class VendorOCRRuntime:
             for value in token_counts
         ):
             _raise_malformed_response(
-                response, "DeepSeek OCR response has invalid token usage",
+                response, f"{label} response has invalid token usage",
             )
         return VendorOCRResponse(
             data=data,
@@ -958,6 +969,10 @@ def _deepseek_payload(
         "max_tokens": config.max_tokens,
         "stream": False,
     }
+    if isinstance(config, VisionChatOCRConfig):
+        payload["messages"][0]["content"][1]["text"] = PAGE_PROMPT
+        if config.provider == "openai":
+            payload["max_completion_tokens"] = payload.pop("max_tokens")
     if config.temperature is not None:
         payload["temperature"] = config.temperature
     if config.top_p is not None:
