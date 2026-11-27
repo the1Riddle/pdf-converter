@@ -15,6 +15,7 @@
   </p>
   <p>
     <a href="https://pdfcraft.ai/pdf-craft/?utm_source=pdf_craft_readme&amp;utm_medium=referral&amp;utm_campaign=pdfcraft_online&amp;utm_content=readme_en_top"><strong>Convert PDFs online</strong></a> ·
+    <a href="#pconv-cli"><strong>PDF to EPUB CLI</strong></a> ·
     <a href="#quick-start"><strong>Python quick start</strong></a> ·
     <a href="#documentation"><strong>Documentation</strong></a>
   </p>
@@ -85,6 +86,16 @@ Results depend on scan quality, page layout, and the OCR model. Check a represen
 | **Python + local OCR** | Developers with their own NVIDIA GPU | Python, Poppler, CUDA, sufficient VRAM, and model files |
 
 Remote OCR sends pages to the configured service and does not require local CUDA. Local OCR runs on your machine; using a remote LLM for translation or table-of-contents analysis still sends the corresponding content to that service.
+
+## pconv CLI
+
+To convert a PDF from your terminal, install this fork’s `pconv` command. Choose [remote OCR with an API key](docs/en/INSTALLATION.md#remote-ocr) or [offline OCR on an NVIDIA GPU](docs/en/INSTALLATION.md#run-pconv-locally-on-an-nvidia-gpu). After setup, run:
+
+```bash
+pconv ~/Downloads/book.pdf
+```
+
+The EPUB is saved to `~/Documents/book.epub`. Pass a second path to choose another filename or directory.
 
 <a id="quick-start"></a>
 
